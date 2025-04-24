@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "491406060308",
+    "firebase_url": "https://medicinus-85d33-default-rtdb.firebaseio.com",
+    "project_id": "medicinus-85d33",
+    "storage_bucket": "medicinus-85d33.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:491406060308:android:5fe93b47e70b16acefb001",
+        "android_client_info": {
+          "package_name": "com.example.medicinus"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "491406060308-vbet9d6n3aq4d2ltopuvlg9qifldb1am.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8dPocQm0momaLLsqGssio1Hu6zE8PTqs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "491406060308-vbet9d6n3aq4d2ltopuvlg9qifldb1am.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
