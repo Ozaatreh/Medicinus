@@ -10,7 +10,7 @@ class AddMedicinePage extends StatefulWidget {
 class _AddMedicinePageState extends State<AddMedicinePage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController doseController = TextEditingController();
-  final String userId = FirebaseAuth.instance.currentUser!.uid;
+  final String? userId = FirebaseAuth.instance.currentUser!.email;
 
   // Method to save medicine to Firestore
   void saveMedicine() async {
