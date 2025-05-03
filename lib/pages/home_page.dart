@@ -11,11 +11,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
      backgroundColor: Colors.blueGrey,
-      appBar: AppBar(
-        backgroundColor: Colors.blueGrey,
-        title: Text("Medicine Reminder"),
-        centerTitle: true,
-      ),
+      
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -35,33 +31,53 @@ class HomePage extends StatelessWidget {
 
           var medicines = snapshot.data!.docs;
 
-          return ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: medicines.length,
-            itemBuilder: (context, index) {
-              var medicine = medicines[index].data() as Map<String, dynamic>;
-
-              return Card(
-                margin: EdgeInsets.only(bottom: 16),
-                color: Color(0xFFE0E5EC),
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          return Column(
+            children: [
+               SizedBox(height: 90),
+            Center(
+              child: Text(
+                'My Medicine',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
                 ),
-                child: ListTile(
-                  leading: Icon(
-                    Icons.medication,
-                    size: 40,
-                    color: Colors.blueGrey,
-                  ),
-                  title: Text(
-                    medicine['name'],
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text("Dose: ${medicine['dose']}"),
+              ),
+            ),
+            SizedBox(height: 20),
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.all(16),
+                  itemCount: medicines.length,
+                  itemBuilder: (context, index) {
+                    var medicine = medicines[index].data() as Map<String, dynamic>;
+                
+                    return Card(
+                      margin: EdgeInsets.only(bottom: 16),
+                      color: Color(0xFFE0E5EC),
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.medication,
+                          size: 40,
+                          color: Colors.blueGrey,
+                        ),
+                        title: Text(
+                          medicine['name'],
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text("Dose: ${medicine['dose']}"),
+                        trailing: Text("Time: ${medicine['time']}"),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),

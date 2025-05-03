@@ -1,6 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 
 class AddMedicinePage extends StatefulWidget {
   @override
@@ -8,86 +9,243 @@ class AddMedicinePage extends StatefulWidget {
 }
 
 class _AddMedicinePageState extends State<AddMedicinePage> {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController doseController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _doseController = TextEditingController();
   final String? userId = FirebaseAuth.instance.currentUser!.email;
+  String _selectedType = 'Capsule';
+  String _selectedUnit = 'pill';
+  TimeOfDay? _selectedTime;
 
-  // Method to save medicine to Firestore
-  void saveMedicine() async {
-    if (nameController.text.isNotEmpty && doseController.text.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('medicines')
-          .add({
-        'name': nameController.text,
-        'dose': doseController.text,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      Navigator.pop(context); // Navigate back after saving
+  void _pickTime() async {
+    TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() => _selectedTime = picked);
     }
+  }
+
+  void _saveMedicine() async {
+    if (_nameController.text.isEmpty || _doseController.text.isEmpty || _selectedTime == null) return;
+
+    await FirebaseFirestore.instance.collection('users').doc(userId) // Replace with auth
+      .collection('medicines').add({
+        'name': _nameController.text,
+        'type': _selectedType,
+        'dose': _doseController.text,
+        'unit': _selectedUnit,
+        'time': _selectedTime!.format(context),
+      });
+
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blueGrey,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text("Add Medicine"),
-        backgroundColor: Colors.blueGrey,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Medicine Name Input Field
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                  hintText: 'Medicine Name',
-                  hintStyle: TextStyle(color: Colors.black),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.white),
-                  ),
-                ),
+      // appBar: AppBar(title: Text("Add Medicine")),
+      body:SingleChildScrollView(
+  child: Padding(
+    padding: const EdgeInsets.all(24.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 40),
+        Center(
+          child: Text(
+            'Add Medication',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
             ),
-            SizedBox(height: 16),
-            
-            // Dose Input Field
-            TextField(
-              controller: doseController,
-              decoration: InputDecoration(
-                  hintText: 'Dose',
-                  hintStyle: TextStyle(color: Colors.black),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.white),
-                  ),
-                ),
-            ),
-            SizedBox(height: 24),
-
-            // Save Medicine Button
-            ElevatedButton(
-              onPressed: saveMedicine,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                minimumSize: Size(double.infinity, 50),
-              ),
-              child: Text(
-                "Save Medicine",
-                style: TextStyle(fontSize: 18, color: Colors.black),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 32),
+        
+        // Medicine Name Field
+        Text(
+          'Medicine Name',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: _nameController,
+            style: TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              hintText: 'Enter medicine name',
+              hintStyle: TextStyle(color: Colors.white54),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Medicine Type Dropdown
+        Text(
+          'Medicine Type',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: _selectedType,
+              dropdownColor: Colors.blueGrey[800],
+              style: TextStyle(color: Colors.white, fontSize: 16),
+              items: ['Capsule', 'Syrup', 'Tablet', 'Injection']
+                .map((e) => DropdownMenuItem(
+                  value: e, 
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(e),
+                  ),
+                ))
+                .toList(),
+              onChanged: (val) => setState(() => _selectedType = val!),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Dose Input
+        Text(
+          'Dosage',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextField(
+                  controller: _doseController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    hintText: 'Dose amount',
+                    hintStyle: TextStyle(color: Colors.white54),
+                  ),
+                ),
+              ),),
+             const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: _selectedUnit,
+                    dropdownColor: Colors.blueGrey[800],
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    items: ['pill','mg', 'ml']
+                      .map((e) => DropdownMenuItem(
+                        value: e, 
+                        child: Text(e),
+                      ))
+                      .toList(),
+                    onChanged: (val) => setState(() => _selectedUnit = val!),
+                  ),
+                ),
+              ),
+            ),
+        ],
+        ),
+        const SizedBox(height: 32),
+        
+        // Time Picker Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _pickTime,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueGrey[700],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              _selectedTime == null
+                  ? "Set Reminder Time"
+                  : "Reminder at ${_selectedTime!.format(context)}",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 90),
+        
+        // Save Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _saveMedicine,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 249, 249, 249),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
+            child: Text(
+              "Save Medication",
+              style: TextStyle(
+                
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+)
     );
   }
 }

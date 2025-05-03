@@ -12,14 +12,14 @@ class HomeNavigation extends StatefulWidget {
 
 class _HomeNavigationState extends State<HomeNavigation> {
  
-  int selectedIndex = 1;
+  int selectedIndex = 0;
   
 
   // List of pages to display based on selected index
   final List<Widget> pages = [
+    HomePage(),
     MedicineReminderPage(),
-    HomePage(),
-    HomePage(),
+    MedicineReminderPage(),
   ];
 
   // pages changer
