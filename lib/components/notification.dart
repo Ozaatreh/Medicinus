@@ -1,19 +1,10 @@
-import 'dart:ui';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:medicinus/main.dart';
 import 'package:medicinus/pages/medicin_details.dart';
 
 class NotificationService {
-  // Request permissions when the app starts
-  static Future<void> requestPermissions() async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-    if (!isAllowed) {
-      await AwesomeNotifications().requestPermissionToSendNotifications();
-    }
-  }
-
-  // Initialize the notification system
   static void initialize() {
     AwesomeNotifications().initialize(
       'resource://drawable/medical_icon',
@@ -35,21 +26,31 @@ class NotificationService {
     );
   }
 
-  // Schedule a notification
+  static Future<void> requestPermissions() async {
+    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+    if (!isAllowed) {
+      await AwesomeNotifications().requestPermissionToSendNotifications();
+    }
+  }
+
   static Future<void> scheduleNotification(
       int id, String medicineName, DateTime time, String medicineId) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId == null) return;
+
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: id,
         channelKey: 'medicine_reminders',
         title: 'Time to take your medicine',
-        body: 'Don’t forget to take $medicineName!',
-        notificationLayout: NotificationLayout.Default,
-        wakeUpScreen: true,
-        category: NotificationCategory.Reminder,
-        autoDismissible: true,
-        locked: false,
-        payload: {'medicineId': medicineId}, // Pass the medicineId in the payload
+        body: "Dont forget to take $medicineName!",
+        payload: {
+          'medicineId': medicineId,
+          'userId': userId,
+        },
+        wakeUpScreen: true,  // Ensure screen wakes up
+        fullScreenIntent: true,  // Show as full screen intent
       ),
       schedule: NotificationCalendar(
         year: time.year,
@@ -64,22 +65,33 @@ class NotificationService {
     );
   }
 
-  // Handle notification tap
+  static void setupNotificationListeners() {
+    AwesomeNotifications().setListeners(
+      onActionReceivedMethod: (ReceivedAction receivedAction) async {
+        await onNotificationTap(receivedAction);
+      },
+    );
+  }
+
   static Future<void> onNotificationTap(ReceivedAction receivedAction) async {
-    final medicineId = receivedAction.payload?['medicineId'];
-    if (medicineId != null) {
+    final payload = receivedAction.payload;
+    final medicineId = payload?['medicineId'];
+    final userId = payload?['userId'];
+
+    if (medicineId != null && userId != null) {
+      // Use navigatorKey to push the new route
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (_) => MedicineDetailsPage(medicineId: medicineId),
+          builder: (_) => MedicineDetailsPage(
+            medicineId: medicineId,
+            userId: userId,
+          ),
         ),
       );
     }
   }
 
-  // Listen to notification actions (e.g., tap on notification)
-  static void handleNotificationClick() {
-    AwesomeNotifications().setListeners(
-      onActionReceivedMethod: onNotificationTap,
-    );
+  static Future<void> cancelNotification(int id) async {
+    await AwesomeNotifications().cancel(id);
   }
 }

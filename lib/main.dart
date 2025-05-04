@@ -1,4 +1,5 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:medicinus/auth/auth_check.dart';
@@ -13,7 +14,7 @@ void main() async {
   await Firebase.initializeApp();
 
   AwesomeNotifications().initialize(
-    null,
+      'resource://drawable/medical_icon',
     [
       NotificationChannel(
         channelKey: 'medicine_reminders',
@@ -25,6 +26,14 @@ void main() async {
     ],
     debug: true,
   );
+
+// Debug: Print notification permission status
+final allowed = await AwesomeNotifications().isNotificationAllowed();
+print('Notification allowed: $allowed');
+
+// Debug: List all channels
+// final channels = await AwesomeNotifications().listChannels();
+// print('Notification channels: $channels');
 
   AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
     if (!isAllowed) {
@@ -51,17 +60,24 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
 Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
   final payload = receivedAction.payload;
-  final medicineId = payload?['medicineId'];
+  final String? medicineId = payload?['medicineId'];
 
-  if (medicineId != null) {
+  final user = FirebaseAuth.instance.currentUser;
+  final String? userId = user?.email;
+
+  if (medicineId != null && userId != null) {
     navigatorKey.currentState?.push(
       MaterialPageRoute(
-        builder: (_) => MedicineDetailsPage(medicineId: medicineId),
+        builder: (_) => MedicineDetailsPage(
+          medicineId: medicineId,
+          userId: userId,
+        ),
       ),
     );
   } else {
-    print('⚠️ No medicineId found in payload.');
+    print('⚠️ Missing medicineId or user not logged in.');
   }
 }

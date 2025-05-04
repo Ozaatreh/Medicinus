@@ -1,26 +1,60 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class MedicineDetailsPage extends StatelessWidget {
+class MedicineDetailsPage extends StatefulWidget {
+  final String userId;
   final String medicineId;
 
-  const MedicineDetailsPage({required this.medicineId, super.key});
+  const MedicineDetailsPage({
+    super.key,
+    required this.userId,
+    required this.medicineId,
+  });
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> fetchMedicine() {
-    return FirebaseFirestore.instance
-        .collection('medicines')
-        .doc(medicineId)
-        .get();
+  @override
+  State<MedicineDetailsPage> createState() => _MedicineDetailsPageState();
+}
+
+class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
+  @override
+  void initState() {
+    super.initState();
+    _markNotificationAsRead();
   }
+
+  void _markNotificationAsRead() async {
+    // Clear any pending notifications for this medicine
+    await AwesomeNotifications().cancelAll();
+  }
+  
+  Future<DocumentSnapshot<Map<String, dynamic>>> fetchMedicine() {
+  print('🟢 Fetching medicine for:');
+  print('   User ID: ${widget.userId}');
+  print('   Medicine ID: ${widget.medicineId}');
+  
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.userId)
+      .collection('medicines')  // Double check this spelling!
+      .doc(widget.medicineId)
+      .get()
+      .then((doc) {
+        print('🔵 Document exists? ${doc.exists}');
+        if (doc.exists) {
+          print('   Data: ${doc.data()}');
+        }
+        return doc;
+      });
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blueGrey[900],
-      body: Center(
-        child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          future: fetchMedicine(),
-          builder: (context, snapshot) {
+      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        future: fetchMedicine(),
+        builder: (context, snapshot) { 
             if (snapshot.connectionState == ConnectionState.waiting) {
               return CircularProgressIndicator(color: Colors.white);
             }
@@ -36,7 +70,6 @@ class MedicineDetailsPage extends StatelessWidget {
             final name = data['name'] ?? 'Unknown';
             final dose = data['dose'] ?? '';
             final doseUnit = data['unit'] ?? '';
-            // final instructions = data['instructions'] ?? '';
 
             return Container(
               constraints: BoxConstraints(maxWidth: 500),
@@ -113,15 +146,6 @@ class MedicineDetailsPage extends StatelessWidget {
                             color: Colors.white70,
                           ),
                         ),
-                        SizedBox(height: 4),
-                        // Text(
-                        //   instructions,
-                        //   style: TextStyle(
-                        //     fontSize: 14,
-                        //     color: Colors.white60,
-                        //     fontStyle: FontStyle.italic,
-                        //   ),
-                        // ),
                       ],
                     ),
                   ),
@@ -154,7 +178,7 @@ class MedicineDetailsPage extends StatelessWidget {
             );
           },
         ),
-      ),
-    );
+      );
+    
   }
 }
