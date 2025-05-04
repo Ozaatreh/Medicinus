@@ -1,17 +1,32 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:medicinus/add_medicine.dart';
 
 
 class HomePage extends StatelessWidget {
-  final String? userId = FirebaseAuth.instance.currentUser!.email;
+  final String? userId = FirebaseAuth.instance.currentUser?.email;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     backgroundColor: Colors.blueGrey,
-      
+      backgroundColor: Colors.blueGrey[900],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text("My Medications", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.white,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddMedicinePage()),
+          );
+        },
+        child: Icon(Icons.add, color: Colors.black),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -19,77 +34,77 @@ class HomePage extends StatelessWidget {
             .collection('medicines')
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text("No medicines added"));
+            return Center(child: Text('Something went wrong!', style: TextStyle(color: Colors.white)));
           }
 
-          var medicines = snapshot.data!.docs;
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator(color: Colors.white));
+          }
 
-          return Column(
-            children: [
-               SizedBox(height: 90),
-            Center(
-              child: Text(
-                'My Medicine',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+          final docs = snapshot.data!.docs;
+
+          if (docs.isEmpty) {
+            return Center(
+              child: Text('No medications added yet.', style: TextStyle(color: Colors.white70)),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+
+              return Card(
+                color: Colors.blueGrey[800],
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  title: Text(data['name'], style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 4),
+                      Text("Type: ${data['type']}", style: TextStyle(color: Colors.white70)),
+                      Text("Dose: ${data['dose']} ${data['unit']}", style: TextStyle(color: Colors.white70)),
+                      Text("Reminder: ${data['time']}", style: TextStyle(color: Colors.white70)),
+                    ],
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddMedicinePage(
+                              medicineData: data,
+                              medicineId: doc.id,
+                            ),
+                          ),
+                        );
+                      } else if (value == 'delete') {
+                        FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(userId)
+                            .collection('medicines')
+                            .doc(doc.id)
+                            .delete();
+                      }
+                    },
+                    icon: Icon(Icons.more_vert, color: Colors.white),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-            SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: medicines.length,
-                  itemBuilder: (context, index) {
-                    var medicine = medicines[index].data() as Map<String, dynamic>;
-                
-                    return Card(
-                      margin: EdgeInsets.only(bottom: 16),
-                      color: Color(0xFFE0E5EC),
-                      elevation: 5,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.medication,
-                          size: 40,
-                          color: Colors.blueGrey,
-                        ),
-                        title: Text(
-                          medicine['name'],
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text("Dose: ${medicine['dose']}"),
-                        trailing: Text("Time: ${medicine['time']}"),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+              );
+            },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddMedicinePage()),
-          );
-        },
-        child: Icon(Icons.add),
-        backgroundColor: Colors.white, // Adjust the color as needed
       ),
     );
   }

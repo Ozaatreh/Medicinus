@@ -100,7 +100,7 @@ class _MedicineReminderPageState extends State<MedicineReminderPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey,
+      backgroundColor: Colors.blueGrey[900],
       body: SafeArea(
         child: Column(
           children: [
